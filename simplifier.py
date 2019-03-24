@@ -1,12 +1,9 @@
-# 将非考虑为不同的event
-# todo: 支持多元异或，对于n元异或，分为n-1个门
+# 非没有进行判断，将其作为普通字符
+# 只支持二元异或
 # todo: 支持atleast, 使用递归
 
 class simplifier:
     class node:
-        name = ""
-        gate_type = ""
-        children = []
         def __init__ (self, name, gate_type = "basic"):
             self.name = name
             self.gate_type = gate_type
@@ -15,6 +12,8 @@ class simplifier:
     node_list = []
     root_node = node("r1")
     operator_tag = {"|":"or", "&":"and", "#":"xor", "-":"not"}
+    xor_num = 0 # 为xor新增的门
+    at_least_num = 0 # 为at_least新增的门
 
     @staticmethod
     def create_node(name):
@@ -29,10 +28,6 @@ class simplifier:
     @staticmethod
     def delete_child(parent_node, child_node):
         parent_node.children.remove(child_node) # 删除父指向子的指针
-
-    @staticmethod
-    def update_gate(cur_node, gate_type):
-        cur_node.gate_type = gate_type
 
     @staticmethod
     def add_child(parent_node, child_node):
@@ -50,7 +45,6 @@ class simplifier:
         not_in_one_line = 0
         last_line = ""
         is_annotation = 0 # 一片注释
-        xo = 0 # 为xor新增加的门
         for line in raw:
             # 处理空行
             if len(line) == 1:
@@ -81,7 +75,6 @@ class simplifier:
             cur = ""
             i = 0
             flag = 0 # 是否是atleast
-            num = ""
             cur_list = []
             # 读取门的名称
             for i in range(0, length-1):
@@ -117,11 +110,78 @@ class simplifier:
                     if line[i] != " ":
                         cur += line[i]
                     i = i+1
-                gate_node.gate_type = simplifier.operator_tag[operator]
-                for i in cur_list:
-                    simplifier.create_node(i)
-                    simplifier.add_child(gate_node, i)       
+                if operator != "#":
+                    gate_node.gate_type = simplifier.operator_tag[operator]
+                    for i in cur_list:
+                        simplifier.add_child(gate_node, i)
+                else:
+                    gate_node.gate_type = simplifier.operator_tag["|"]
+                    simplifier.add_child(gate_node, simplifier.create_node("xo"+str(simplifier.xor_num)))
+                    simplifier.xor_num += 1
+                    simplifier.add_child(gate_node, simplifier.create_node("xo"+str(simplifier.xor_num)))
+                    simplifier.xor_num += 1
+                    gate_node.children[0].gate_type = gate_node.children[1].gate_type = simplifier.operator_tag["&"]
+                    neg_a = simplifier.create_node("-"+cur_list[0].name)
+                    neg_b = simplifier.create_node("-"+cur_list[1].name)
+                    simplifier.add_child(gate_node.children[0], neg_a)  # ~A v B
+                    simplifier.add_child(gate_node.children[0], cur_list[1])
+                    simplifier.add_child(gate_node.children[1], neg_b)  # ~B v A
+                    simplifier.add_child(gate_node.children[1], cur_list[0])
+            else:
+                count = "" # atleast中至少几个为真
+                gate_node.gate_type = simplifier.operator_tag["|"]
+                while i < length:
+                    if line[i] == "," or line[i] == " ":
+                        break
+                    count += line[i]
+                    i = i+1
+                while line[i] != "[":
+                    i = i+1
+                i = i+1
+                while line[i] == " ":
+                    i = i+1
+                while i < length:
+                    if line[i] == ",":
+                        cur_list.append(simplifier.create_node(cur))
+                        cur = ""
+                        i = i+1
+                        continue
+                    if line[i] == "]":
+                        cur_list.append(simplifier.create_node(cur))
+                        cur = ""
+                        break
+                    if line[i] != " ":
+                        cur += line[i]
+                    i = i+1
+                simplifier.at_least_helper(cur_list, [], int(count), gate_node, len(cur_list))
         raw.close()
+    @staticmethod
+    def at_least_helper(neg_list, pos_list, count, gate_node, last_size): # last_size用于避免得到相同的组合
+        if count == 0:
+            new_node = simplifier.create_node("al"+str(simplifier.at_least_num))
+            simplifier.add_child(gate_node, new_node)
+            simplifier.at_least_num += 1
+            new_node.gate_type = simplifier.operator_tag["&"]
+            for pos in pos_list:
+                new_node.children.append(pos)
+            for neg in neg_list:
+                new_node.children.append(simplifier.create_node("-"+neg.name))
+            return
+        size = len(neg_list)
+        while size > 0:
+            size -= 1
+            if size >= last_size:
+                continue
+            new_pos_list = []
+            new_neg_list = []
+            for i in pos_list:
+                new_pos_list.append(i)
+            new_pos_list.append(neg_list[size])
+            for j in neg_list:
+                new_neg_list.append(j)
+            new_neg_list.remove(neg_list[size])
+            simplifier.at_least_helper(new_neg_list, new_pos_list, count-1, gate_node, size)
+            
     @staticmethod
     def simplify(cur_node):
         if len(cur_node.children) == 0:
@@ -151,6 +211,6 @@ class simplifier:
             simplifier.check(i)
 
 if __name__ == "__main__":
-    simplifier.parser("./motor2.dag")
+    simplifier.parser("./test.dag")
     simplifier.simplify(simplifier.root_node)
     simplifier.check(simplifier.root_node)
