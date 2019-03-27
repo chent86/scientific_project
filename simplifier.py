@@ -1,6 +1,5 @@
 # 非没有进行判断，将其作为普通字符
 # 只支持二元异或
-# todo: 支持atleast, 使用递归
 
 class simplifier:
     class node:
@@ -12,9 +11,10 @@ class simplifier:
     node_list = []
     root_node = node("r1")
     operator_tag = {"|":"or", "&":"and", "#":"xor", "-":"not"}
+    inv_operator_tag = {"or":"|", "and":"&", "xor":"#", "not":"-"}
     xor_num = 0 # 为xor新增的门
     at_least_num = 0 # 为at_least新增的门
-
+    result = ""
     @staticmethod
     def create_node(name):
         for i in simplifier.node_list:
@@ -203,14 +203,24 @@ class simplifier:
                 simplifier.simplify(cur_node.children[i])
             i += 1
     @staticmethod
-    def check(cur_node):
-        print("@", cur_node.name)
+    def format(cur_node):
+        if not cur_node.children:
+            return
+        line = ""
+        line += cur_node.name
+        line += " := ("
+        operator = simplifier.inv_operator_tag[cur_node.gate_type]
         for i in cur_node.children:
-            print(i.name)
+            line += i.name + " " + operator + " "
+        line = line[:len(line)-3] + ");"
+        print(line)
+        simplifier.result += line + "\n"
         for i in cur_node.children:
-            simplifier.check(i)
+            simplifier.format(i)
 
 if __name__ == "__main__":
     simplifier.parser("./test.dag")
     simplifier.simplify(simplifier.root_node)
-    simplifier.check(simplifier.root_node)
+    simplifier.format(simplifier.root_node)
+    sdag = open("test.sdag", "w")
+    sdag.write(simplifier.result)
