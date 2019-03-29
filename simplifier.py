@@ -20,7 +20,7 @@ class simplifier:
         while i < len(cur_node.children):
             if cur_node.gate_type == cur_node.children[i].gate_type:
                 for j in cur_node.children[i].children:
-                    cur_node.children.append(j)
+                    self.helper.add_child(cur_node, j, cur_node.children[i].sign[j.name])
                 self.helper.delete_child(cur_node, cur_node.children[i])
                 i -= 1  # 迭代器失效
             else:
@@ -35,13 +35,14 @@ class simplifier:
         line += " := ("
         operator = inv_operator_tag[cur_node.gate_type]
         for i in cur_node.children:
+            if cur_node.sign[i.name] == 1:
+                line += "-"
             line += i.name + " " + operator + " "
         line = line[:len(line) - 3] + ");"
         print(line)
         self.result += line + "\n"
         for i in cur_node.children:
             self.format(i)
-
 
 
 if __name__ == "__main__":

@@ -1,5 +1,4 @@
-# 非没有进行判断，将其作为普通字符(由于节点要共享孩子信息，所以非不能存储在节点中，因为有的非，有的不是非)
-# 解决方案可能为：将children设计为二元组，第一项代表符号
+# 支持非，但不支持门事件为非
 
 inv_operator_tag = {"or": "|", "and": "&", "xor": "#", "not": "-"}
 
@@ -9,7 +8,7 @@ class node:  # 节点
         self.name = name
         self.gate_type = gate_type
         self.children = []
-
+        self.sign = dict()  # name : 0为正, 1为负 用来标记孩子的符号
 
 class node_helper:  # 树
 
@@ -22,6 +21,8 @@ class node_helper:  # 树
         self.at_least_num = 0  # 为at_least新增的门
 
     def create_node(self, name):
+        if name[0] == '-':  # 非与原始的节点是同一个节点，不重复创建
+            name = name[1:]
         for i in self.node_list:
             if i.name == name:
                 return i
@@ -33,8 +34,9 @@ class node_helper:  # 树
 
     def delete_child(self, parent_node, child_node):
         parent_node.children.remove(child_node)  # 删除父指向子的指针
+        parent_node.sign.pop(child_node.name)  # 删除该孩子的符号
 
-    def add_child(self, parent_node, child_node):
+    def add_child(self, parent_node, child_node, sign):
         already = False
         for i in parent_node.children:
             if i.name == child_node.name:
@@ -42,6 +44,7 @@ class node_helper:  # 树
                 break
         if not already:
             parent_node.children.append(child_node)
+            parent_node.sign[child_node.name] = sign
             child_node.parent = parent_node
 
     def parser(self, file_name):
@@ -80,6 +83,7 @@ class node_helper:  # 树
             i = 0
             flag = 0  # 是否是atleast
             cur_list = []
+            sign_list = []  # 每个child是否取非
             # 读取门的名称
             for i in range(0, length - 1):
                 if line[i] == " " or line[i] == ":":
@@ -104,11 +108,19 @@ class node_helper:  # 树
                     if line[i] == "&" or line[i] == "|" or line[i] == "#":
                         operator = line[i]
                         cur_list.append(self.create_node(cur))
+                        if cur[0] == '-':
+                            sign_list.append(1)
+                        else:
+                            sign_list.append(0)
                         cur = ""
                         i = i + 1
                         continue
                     if line[i] == ")" or line[i] == ";":
                         cur_list.append(self.create_node(cur))
+                        if cur[0] == '-':
+                            sign_list.append(1)
+                        else:
+                            sign_list.append(0)
                         cur = ""
                         break
                     if line[i] != " ":
@@ -116,8 +128,8 @@ class node_helper:  # 树
                     i = i + 1
                 if operator != "#":
                     gate_node.gate_type = self.operator_tag[operator]
-                    for i in cur_list:
-                        self.add_child(gate_node, i)
+                    for i in range(len(cur_list)):
+                        self.add_child(gate_node, cur_list[i], sign_list[i])
                 else:  # 处理多元异或
                     gate_node.gate_type = self.operator_tag["|"]
                     xor_root = gate_node
@@ -154,19 +166,19 @@ class node_helper:  # 树
                 self.at_least_helper(cur_list, [], int(count), gate_node, len(cur_list))
         raw.close()
 
-    def at_least_helper(self, neg_list, pos_list, count, gate_node, last_size):  # last_size用于避免得到相同的组合
+    def at_least_helper(self, neg_list, pos_list, count, gate_node, last_size):  # last_size用于避免得到相同的组合（不同的排列）
         if count == 0:
             new_node = self.create_node("al" + str(self.at_least_num))
-            self.add_child(gate_node, new_node)
+            self.add_child(gate_node, new_node, 0)
             self.at_least_num += 1
             new_node.gate_type = self.operator_tag["&"]
             for pos in pos_list:
-                new_node.children.append(pos)
+                self.add_child(new_node, pos, 0)
             for neg in neg_list:
-                new_node.children.append(self.create_node("-" + neg.name))
+                self.add_child(new_node, neg, 1)
             return
         size = len(neg_list)
-        while size > 0:
+        while size > 0:  # 对于长度为n的序列，挑一个有n中可能，每一种都要跑一次递归
             size -= 1
             if size >= last_size:
                 continue
@@ -185,9 +197,9 @@ class node_helper:  # 树
         if len(second_node_list) == 1:
             flag = False  # 二元异或
         xor_root.gate_type = self.operator_tag["|"]
-        self.add_child(xor_root, self.create_node("xo" + str(self.xor_num)))
+        self.add_child(xor_root, self.create_node("xo" + str(self.xor_num)), 0)
         self.xor_num += 1
-        self.add_child(xor_root, self.create_node("xo" + str(self.xor_num)))
+        self.add_child(xor_root, self.create_node("xo" + str(self.xor_num)), 0)
         self.xor_num += 1
         if flag:
             new_xor_root = self.create_node("xo" + str(self.xor_num))
@@ -195,11 +207,9 @@ class node_helper:  # 树
         else:
             new_xor_root = second_node_list[0]
         xor_root.children[0].gate_type = xor_root.children[1].gate_type = self.operator_tag["&"]
-        neg_a = self.create_node("-" + first_node.name)
-        neg_b = self.create_node("-" + new_xor_root.name)
-        self.add_child(xor_root.children[0], neg_a)  # ~A & B
-        self.add_child(xor_root.children[0], new_xor_root)
-        self.add_child(xor_root.children[1], neg_b)  # ~B & A
-        self.add_child(xor_root.children[1], first_node)
+        self.add_child(xor_root.children[0], first_node, 1)  # ~A & B
+        self.add_child(xor_root.children[0], new_xor_root, 0)
+        self.add_child(xor_root.children[1], new_xor_root, 1)  # ~B & A
+        self.add_child(xor_root.children[1], first_node, 0)
         if flag:
             return new_xor_root
