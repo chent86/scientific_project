@@ -15,7 +15,7 @@ class node_helper:  # 树
     operator_tag = {"|": "or", "&": "and", "#": "xor", "-": "not"}
 
     def __init__(self):
-        self.node_list = []
+        self.node_dict = dict()  # name : node
         self.root_node = node("r1")
         self.xor_num = 0  # 为xor新增的门
         self.at_least_num = 0  # 为at_least新增的门
@@ -23,11 +23,11 @@ class node_helper:  # 树
     def create_node(self, name):
         if name[0] == '-':  # 非与原始的节点是同一个节点，不重复创建
             name = name[1:]
-        for i in self.node_list:
-            if i.name == name:
-                return i
+        for key in self.node_dict:
+            if key == name:
+                return self.node_dict.get(key)
         new_node = node(name)
-        self.node_list.append(new_node)
+        self.node_dict[name] = new_node
         if name == "r1":
             self.root_node = new_node
         return new_node
