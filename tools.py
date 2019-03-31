@@ -7,8 +7,10 @@ class node:  # 节点
     def __init__(self, name, gate_type = "basic"):
         self.name = name
         self.gate_type = gate_type
-        self.children = []
+        self.children = set()
         self.sign = dict()  # name : 0为正, 1为负 用来标记孩子的符号
+    def __repr__(self):
+        return "name: "+self.name
 
 class node_helper:  # 树
 
@@ -43,7 +45,7 @@ class node_helper:  # 树
                 already = True
                 break
         if not already:
-            parent_node.children.append(child_node)
+            parent_node.children.add(child_node)
             parent_node.sign[child_node.name] = sign
             child_node.parent = parent_node
 
@@ -197,19 +199,21 @@ class node_helper:  # 树
         if len(second_node_list) == 1:
             flag = False  # 二元异或
         xor_root.gate_type = self.operator_tag["|"]
-        self.add_child(xor_root, self.create_node("xo" + str(self.xor_num)), 0)
+        xo_first = self.create_node("xo" + str(self.xor_num))
+        self.add_child(xor_root, xo_first, 0)
         self.xor_num += 1
-        self.add_child(xor_root, self.create_node("xo" + str(self.xor_num)), 0)
+        xo_second = self.create_node("xo" + str(self.xor_num))
+        self.add_child(xor_root, xo_second, 0)
         self.xor_num += 1
         if flag:
             new_xor_root = self.create_node("xo" + str(self.xor_num))
             self.xor_num += 1
         else:
             new_xor_root = second_node_list[0]
-        xor_root.children[0].gate_type = xor_root.children[1].gate_type = self.operator_tag["&"]
-        self.add_child(xor_root.children[0], first_node, 1)  # ~A & B
-        self.add_child(xor_root.children[0], new_xor_root, 0)
-        self.add_child(xor_root.children[1], new_xor_root, 1)  # ~B & A
-        self.add_child(xor_root.children[1], first_node, 0)
+        xo_first.gate_type = xo_second.gate_type = self.operator_tag["&"]
+        self.add_child(xo_first, first_node, 1)  # ~A & B
+        self.add_child(xo_first, new_xor_root, 0)
+        self.add_child(xo_second, new_xor_root, 1)  # ~B & A
+        self.add_child(xo_second, first_node, 0)
         if flag:
             return new_xor_root

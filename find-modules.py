@@ -9,6 +9,7 @@ class find_models:
         self.cur_level = 1
         self.result = set()  # name 已经得到的model的root的name
         self.both_AEG = set()  # name 有两种AEG值的节点名称
+        self.LCC_set = set()
 
     def init_level(self, cur_node: node):  # 使用了DFS，不与论文步骤完全一致
         if not cur_node.children:
@@ -65,7 +66,7 @@ class find_models:
     def CC_check(self, cur_node):
         expand_set = set()  # 当前model包括的节点
         connection_set = set()  # 所有节点的connection_list包含的节点
-        basic_or_top = set()  # expand中的basic和module top, 用于LCC阶段 name
+        basic_or_top = dict()  # expand中的basic和module top, 用于LCC阶段 name
         expand_set.add(cur_node.name)
         self.CC_helper(expand_set, connection_set, cur_node, basic_or_top)
         flag = True
@@ -84,7 +85,7 @@ class find_models:
                 connection_set.add(i[0])
             if not child.children or child.name in self.result:
                 if child.name not in self.both_AEG:  # 排除有两种AEG的节点
-                    basic_or_top.add(child.name)
+                    basic_or_top[child.name] = cur_node.gate_type
             else:
                 self.CC_helper(expand_set, connection_set, child, basic_or_top)
 
@@ -107,14 +108,16 @@ class find_models:
             cur += 1
         for s in obtained_set:
             if len(s) > 1:
-                print(s)
+                for i in s:
+                    print(i, basic_or_top[i], self.connection_list[i])
+                print("==================")
                 # if len(self.connection_list[s[0]]) != 1:
                 #     raise Exception("connection_list length more than 1 !", self.connection_list[s[0]])
                 # else:
-                # while self.connection_list[s[0]]：
-                #     name, _ = self.connection_list[s[0]].pop()
-                #     print("LCC find", name)
-                #     self.result.add(name)
+                while self.connection_list[s[0]]:
+                    name, _ = self.connection_list[s[0]].pop()
+                    self.LCC_set.add(name)
+                    # self.result.add(name)
                     
 
 if __name__ == "__main__":
@@ -125,3 +128,4 @@ if __name__ == "__main__":
     f.init_connection_list(h.root_node)
     f.check()
     print(f.result)
+    print(f.LCC_set)
