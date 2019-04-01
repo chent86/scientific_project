@@ -9,8 +9,10 @@ class node:  # 节点
         self.gate_type = gate_type
         self.children = set()
         self.sign = dict()  # name : 0为正, 1为负 用来标记孩子的符号
+
     def __repr__(self):
-        return "name: "+self.name
+        return "node: " + self.name
+
 
 class node_helper:  # 树
 
@@ -19,8 +21,10 @@ class node_helper:  # 树
     def __init__(self):
         self.node_dict = dict()  # name : node
         self.root_node = node("r1")
-        self.xor_num = 0  # 为xor新增的门
-        self.at_least_num = 0  # 为at_least新增的门
+        self.xor_num = 1  # 为xor新增的门
+        self.at_least_num = 1  # 为at_least新增的门
+        self.output = ""
+        self.printed_node = set()
 
     def create_node(self, name):
         if name[0] == '-':  # 非与原始的节点是同一个节点，不重复创建
@@ -217,3 +221,22 @@ class node_helper:  # 树
         self.add_child(xo_second, first_node, 0)
         if flag:
             return new_xor_root
+
+    def format(self, cur_node: node):
+        if not cur_node.children:
+            return
+        if cur_node.name not in self.printed_node:
+            self.printed_node.add(cur_node.name)
+            line = ""
+            line += cur_node.name
+            line += " := ("
+            operator = inv_operator_tag[cur_node.gate_type]
+            for i in cur_node.children:
+                if cur_node.sign[i.name] == 1:
+                    line += "-"
+                line += i.name + " " + operator + " "
+            line = line[:len(line) - 3] + ");"
+            print(line)
+            self.output += line + "\n"
+        for i in cur_node.children:
+            self.format(i)
