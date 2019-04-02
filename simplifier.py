@@ -1,4 +1,5 @@
 from tools import node_helper
+import os
 
 
 class simplifier:
@@ -13,40 +14,46 @@ class simplifier:
         if len(cur_node.children) == 0:
             return
         children_list = [child for child in cur_node.children]  # 避免迭代器失效
-        if len(children_list) == 1:
-            expire_child = cur_node.children[0]
-            self.helper.delete_child(cur_node, expire_child)
-            cur_node.name = expire_child.name
-            cur_node.gate_type = expire_child.gate_type
-            cur_node.children = expire_child.children
-            return
         i = 0
         while i < len(children_list):
-            if cur_node.gate_type == children_list[i].gate_type:
-                for j in children_list[i].children:
-                    self.helper.add_child(cur_node, j, children_list[i].sign[j.name])
-                self.helper.delete_child(cur_node, children_list[i])
-                i -= 1
+            child = children_list[i]
+            if len(child.children) == 1:  # 孩子数为1，则向上合并。需要注意，更新节点名称是全局的，但是更新sign只是局部的
+                for expire_child in child.children:
+                    break
+                child.gate_type = expire_child.gate_type
+                child.children = expire_child.children
+                cur_node.sign[expire_child.name] = child.sign[expire_child.name]
+                cur_node.sign.pop(child.name)
+                child.sign = expire_child.sign
+                self.update_all_sign(child.name, expire_child.name)  # 将等价性扩展到所有节点的符号dict(sign)
+                child.name = expire_child.name
+            if cur_node.gate_type == child.gate_type:
+                for j in child.children:
+                    cur_sign = child.sign[j.name]
+                    self.helper.add_child(cur_node, j, cur_sign)
+                    children_list.append(j)
+                self.helper.delete_child(cur_node, child)
             else:
-                self.simplify_helper(children_list[i], visited_set)
-                if children_list[i].children:  # 从最倒数第二层子树开始考虑, 自底向上合并等效的节点
+                self.simplify_helper(child, visited_set)
+                if child.children:  # 从最倒数第二层子树开始考虑, 自底向上合并等效的节点
                     flag = True
                     for visited_node in visited_set:
-                        if visited_node.name == children_list[i].name:
+                        if visited_node.name == child.name:
                             flag = False
                             break
-                        if visited_node.gate_type == children_list[i].gate_type:
-                            if visited_node.sign == children_list[i].sign:
-                                sign = cur_node.sign.get(children_list[i].name)
-                                cur_node.sign.pop(children_list[i].name)
+                        if visited_node.gate_type == child.gate_type:
+                            if visited_node.sign == child.sign:
+                                sign = cur_node.sign.get(child.name)
+                                cur_node.sign.pop(child.name)
                                 cur_node.sign[visited_node.name] = sign
-                                cur_node.children.remove(children_list[i])
+                                cur_node.children.remove(child)
                                 cur_node.children.add(visited_node)
                                 flag = False
                                 break
                     if flag:
                         visited_set.add(children_list[i])
             i += 1
+        # 合并相同节点后需要再次判断
         if len(cur_node.children) == 1:
             for expire_child in cur_node.children:
                 break
@@ -54,13 +61,34 @@ class simplifier:
             cur_node.gate_type = expire_child.gate_type
             cur_node.children = expire_child.children
             cur_node.sign = expire_child.sign
+            self.update_all_sign(cur_node.name, expire_child.name)
+            cur_node.name = expire_child.name
+        children_list = [child for child in cur_node.children]
+        i = 0
+        while i < len(children_list):
+            child = children_list[i]
+            if cur_node.gate_type == child.gate_type:
+                for j in child.children:
+                    cur_sign = child.sign[j.name]
+                    self.helper.add_child(cur_node, j, cur_sign)
+                    children_list.append(j)
+                self.helper.delete_child(cur_node, child)
+            i += 1
+
+    def update_all_sign(self, old_name, new_name):
+        for key in self.helper.node_dict:
+            cur_node = self.helper.node_dict.get(key)
+            if old_name in cur_node.sign:
+                cur_node.sign[new_name] = cur_node.sign[old_name]
+                cur_node.sign.pop(old_name)
 
 
-if __name__ == "__main__":
+def handler_func(input_file_dir, output_file_dir, file_name):
     h = node_helper()
-    h.parser("./data/result/test.dag")
+    h.parser(input_file_dir + file_name + ".dag")
     s = simplifier(h)
     s.simplify(h.root_node)
     h.format(h.root_node)
-    sdag = open("./data/result/test.sdag", "w")
+    os.system("mkdir data/result/" + file_name)
+    sdag = open(output_file_dir + "/" + file_name + "/" + file_name + ".sdag", "w")
     sdag.write(h.output)

@@ -1,6 +1,3 @@
-# 支持非，但不支持门事件为非
-
-inv_operator_tag = {"or": "|", "and": "&", "xor": "#", "not": "-"}
 
 
 class node:  # 节点
@@ -17,6 +14,7 @@ class node:  # 节点
 class node_helper:  # 树
 
     operator_tag = {"|": "or", "&": "and", "#": "xor", "-": "not"}
+    inv_operator_tag = {"or": "|", "and": "&", "xor": "#", "not": "-"}
 
     def __init__(self):
         self.node_dict = dict()  # name : node
@@ -230,13 +228,31 @@ class node_helper:  # 树
             line = ""
             line += cur_node.name
             line += " := ("
-            operator = inv_operator_tag[cur_node.gate_type]
-            for i in cur_node.children:
-                if cur_node.sign[i.name] == 1:
+            operator = self.inv_operator_tag[cur_node.gate_type]
+            for child in cur_node.children:
+                name = child.name
+                if cur_node.sign[name] == 1:
                     line += "-"
-                line += i.name + " " + operator + " "
+                line += name + " " + operator + " "
             line = line[:len(line) - 3] + ");"
-            print(line)
+            # print(line)
             self.output += line + "\n"
         for i in cur_node.children:
             self.format(i)
+
+    def check_coherent(self):
+        leaves = dict()
+        return self.coherent_helper(self.root_node, leaves)
+
+    def coherent_helper(self, cur_node, leaves):
+        for child in cur_node.children:
+            if not child.children:
+                if child.name in leaves:
+                    if leaves.get(child.name) != cur_node.sign[child.name]:
+                        return False
+                else:
+                    leaves[child.name] = cur_node.sign[child.name]
+            else:
+                if not self.coherent_helper(child, leaves):
+                    return False
+        return True
