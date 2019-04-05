@@ -18,21 +18,25 @@ class simplifier:
         while i < len(children_list):
             child = children_list[i]
             if len(child.children) == 1:  # 孩子数为1，则向上合并。需要注意，更新节点名称是全局的，但是更新sign只是局部的
-                for expire_child in child.children:
+                for new_child in child.children:
                     break
-                child.gate_type = expire_child.gate_type
-                child.children = expire_child.children
-                cur_node.sign[expire_child.name] = child.sign[expire_child.name]
+                child.gate_type = new_child.gate_type  # 要进行深拷贝
+                child.children = new_child.children
+                cur_node.sign[new_child.name] = child.sign[new_child.name]
                 cur_node.sign.pop(child.name)
-                child.sign = expire_child.sign
-                self.update_all_sign(child.name, expire_child.name)  # 将等价性扩展到所有节点的符号dict(sign)
-                child.name = expire_child.name
+                child.sign = new_child.sign
+                self.update_all_sign(child.name, new_child.name)  # 将等价性扩展到所有节点的符号dict(sign)
+                child.name = new_child.name
+
             if cur_node.gate_type == child.gate_type:
                 for j in child.children:
                     cur_sign = child.sign[j.name]
                     self.helper.add_child(cur_node, j, cur_sign)
-                    children_list.append(j)
+                    if j not in children_list:
+                        children_list.append(j)
                 self.helper.delete_child(cur_node, child)
+                children_list.remove(child)
+                i -= 1
             else:
                 self.simplify_helper(child, visited_set)
                 if child.children:  # 从最倒数第二层子树开始考虑, 自底向上合并等效的节点
@@ -57,7 +61,6 @@ class simplifier:
         if len(cur_node.children) == 1:
             for expire_child in cur_node.children:
                 break
-            self.helper.delete_child(cur_node, expire_child)
             cur_node.gate_type = expire_child.gate_type
             cur_node.children = expire_child.children
             cur_node.sign = expire_child.sign
@@ -77,7 +80,7 @@ class simplifier:
 
     def update_all_sign(self, old_name, new_name):
         for key in self.helper.node_dict:
-            cur_node = self.helper.node_dict.get(key)
+            cur_node = self.helper.node_dict[key]
             if old_name in cur_node.sign:
                 cur_node.sign[new_name] = cur_node.sign[old_name]
                 cur_node.sign.pop(old_name)
