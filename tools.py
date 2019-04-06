@@ -7,8 +7,8 @@ class node:  # 节点
         self.children = set()
         self.sign = dict()  # name : 0为正, 1为负 用来标记孩子的符号
 
-    def __repr__(self):
-        return "node: " + self.name
+    # def __repr__(self):
+    #     return "node: " + self.name
 
 
 class node_helper:  # 树
@@ -27,9 +27,8 @@ class node_helper:  # 树
     def create_node(self, name):
         if name[0] == '-':  # 非与原始的节点是同一个节点，不重复创建
             name = name[1:]
-        for key in self.node_dict:
-            if key == name:
-                return self.node_dict.get(key)
+        if name in self.node_dict:
+            return self.node_dict.get(name)
         new_node = node(name)
         self.node_dict[name] = new_node
         if name == "r1":

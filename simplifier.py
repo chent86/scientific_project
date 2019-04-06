@@ -1,5 +1,6 @@
 from tools import node_helper
 import os
+import sys
 
 
 class simplifier:
@@ -20,13 +21,16 @@ class simplifier:
             if len(child.children) == 1:  # 孩子数为1，则向上合并。需要注意，更新节点名称是全局的，但是更新sign只是局部的
                 for new_child in child.children:
                     break
-                child.gate_type = new_child.gate_type  # 要进行深拷贝
-                child.children = new_child.children
-                cur_node.sign[new_child.name] = child.sign[new_child.name]
+                sign = child.sign[new_child.name]
+                if new_child.name in cur_node.sign and cur_node.sign[new_child.name] != sign:
+                    print("error! not and origin in same gate")
+                    sys.exit()
+                cur_node.children.add(new_child)  # 不进行深拷贝，因为这样会导致同名的不同节点，造成同步困难
+                cur_node.sign[new_child.name] = sign
+                cur_node.children.remove(child)
                 cur_node.sign.pop(child.name)
-                child.sign = new_child.sign
-                self.update_all_sign(child.name, new_child.name)  # 将等价性扩展到所有节点的符号dict(sign)
-                child.name = new_child.name
+                child = new_child
+                children_list[i] = new_child
 
             if cur_node.gate_type == child.gate_type:
                 for j in child.children:
@@ -42,7 +46,7 @@ class simplifier:
                 if child.children:  # 从最倒数第二层子树开始考虑, 自底向上合并等效的节点
                     flag = True
                     for visited_node in visited_set:
-                        if visited_node.name == child.name:
+                        if visited_node == child:  # 化简单个孩子时，会产生同名的不同地址的相同节点，这种也要化简
                             flag = False
                             break
                         if visited_node.gate_type == child.gate_type:
@@ -61,11 +65,12 @@ class simplifier:
         if len(cur_node.children) == 1:
             for expire_child in cur_node.children:
                 break
-            cur_node.gate_type = expire_child.gate_type
+            cur_node.gate_type = expire_child.gate_type  # 此处使用了深拷贝，可能存在问题
             cur_node.children = expire_child.children
             cur_node.sign = expire_child.sign
+            self.helper.node_dict.pop(cur_node.name)
             self.update_all_sign(cur_node.name, expire_child.name)
-            cur_node.name = expire_child.name
+            cur_node.name = expire_child.name  # 导致当前节点与node_dict里此名节点不同
         children_list = [child for child in cur_node.children]
         i = 0
         while i < len(children_list):
