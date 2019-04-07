@@ -7,8 +7,8 @@ class node:  # 节点
         self.children = set()
         self.sign = dict()  # name : 0为正, 1为负 用来标记孩子的符号
 
-    # def __repr__(self):
-    #     return "node: " + self.name
+    def __repr__(self):
+        return "node: " + self.name
 
 
 class node_helper:  # 树
@@ -40,15 +40,8 @@ class node_helper:  # 树
         parent_node.sign.pop(child_node.name)  # 删除该孩子的符号
 
     def add_child(self, parent_node, child_node, sign):
-        already = False
-        for i in parent_node.children:
-            if i.name == child_node.name:
-                already = True
-                break
-        if not already:
-            parent_node.children.add(child_node)
-            parent_node.sign[child_node.name] = sign
-            child_node.parent = parent_node
+        parent_node.children.add(child_node)
+        parent_node.sign[child_node.name] = sign
 
     def parser(self, file_name):
         raw = open(file_name, "r")
