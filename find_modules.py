@@ -1,8 +1,8 @@
 from tools import node, node_helper
-
+import sys
 
 class find_models:
-    def __init__(self, helper: node_helper):
+    def __init__(self, helper: node_helper, r1 = True):
         self.helper = helper
         self.level = dict()  # name : (level, node)
         self.connection_list = dict()  # name : set((name, AEG, node))  因为步骤中只是为了找到level最大的值, 可以不必排序
@@ -14,10 +14,10 @@ class find_models:
         self.sdag = dict()  # { root_name : (output, printed_set) } printed_set用于保证在一个module中不重复定义
         self.module_var_index_map = dict()
         self.module_index_var_map = dict()
-        self.basic_event_num = 0
-        self.gate_event_num = 0
         self.module_dict = dict()  # { name : module_name } 不替换原有节点名称的代替品
         self.module_dict["r1"] = "m0"
+        self.r1 = r1  # False: 以门作为模块  True: 生成新模块
+
 
     def init_level(self, cur_node: node):  # 使用了DFS，不与论文步骤完全一致
         if not cur_node.children:
@@ -105,6 +105,8 @@ class find_models:
             self.module_dict[cur_node.name] = f"m{self.LCC_num}"
             self.LCC_num += 1
         self.result.add(cur_node.name)
+        if not self.r1:
+            return
         obtained_set = [[name] for name in basic_or_top]  # TODO 在同一个module的扩展中，是否会出现相同的节点？
         cur = 0
         while cur < len(obtained_set) - 1:  # 获取具有相同connection_list的节点
@@ -237,8 +239,6 @@ class find_models:
             self.module_index_var_map[real_module_name] = inv_num_dict
             divide_set["not-child"].add(cur_node.name)
             total_node_num = len(divide_set["not-child"]) + len(divide_set["is-child"])
-            self.basic_event_num = len(divide_set["is-child"])
-            self.gate_event_num = len(divide_set["not-child"])
             total_line_num = 1
             line_scope = dict()  # {num : [from, to]}
             line = ""
@@ -273,10 +273,10 @@ class find_models:
                 line_scope[num_dict[self.get_real_name(name)]].append(total_line_num - 1)
 
             for name in num_dict:
-                # if name == real_module_name:
-                #     cnf_result += "c " + str(num_dict.get(name)) + " = r1\n"
-                # else:
-                cnf_result += "c " + str(num_dict.get(name)) + " = " + name + "\n"
+                if name == real_module_name:
+                    cnf_result += "c " + str(num_dict.get(name)) + " = r1\n"
+                else:
+                    cnf_result += "c " + str(num_dict.get(name)) + " = " + name + "\n"
             cnf_result += "c\n"
             cnf_result += "n " + str(len(divide_set["is-child"])) + "\n"
             cnf_result += "c\n"
@@ -307,12 +307,24 @@ class find_models:
                 divide_set["not-child"].add(child.name)
                 self.divide_node(child, divide_set)
 
+    def check_module_helper(self):
+        node_list = []
+        for node_dict in self.module_var_index_map.values():
+            node_list.append({name for name in node_dict})
+        for i in range(0, len(node_list)):
+            for j in range(0, len(node_list)):
+                if j != i:
+                    if len(node_list[i]&node_list[j]) != 1:
+                        print("not modularized!!!")
+                        sys.exit()
+                        return False
+        return True
 
 class handler:
-    def __init__(self, input_file_dir, output_file_dir, file_name):
+    def __init__(self, input_file_dir, output_file_dir, file_name, r1 = True):
         h = node_helper()
         h.parser(input_file_dir + file_name + "/" + file_name + ".sdag")
-        self.f = find_models(h)
+        self.f = find_models(h, r1)
         self.f.init_level(h.root_node)
         self.f.init_connection_list(h.root_node)
         self.f.check()
@@ -323,11 +335,22 @@ class handler:
         self.f.get_cnf(output_file_dir + file_name + "/", file_name)
 
     def data(self):
+        # 将map中的根全部换成r1
+        for key, map_dict in self.f.module_var_index_map.items():
+            for node_name, index in map_dict.items():
+                if node_name == key:
+                    map_dict["r1"] = map_dict[node_name]
+                    map_dict.pop(node_name)
+                    break
+        for key, map_dict in self.f.module_index_var_map.items():
+            for index, node_name in map_dict.items():
+                if node_name == key:
+                    map_dict[index] = "r1"
+                    break
         return {
             "is_coherent": self.f.helper.check_coherent(),
-            "basic_event_num": self.f.basic_event_num,
-            "gate_event_num": self.f.gate_event_num,
             "modules_num": len(self.f.result),
             "module_var_index_map": self.f.module_var_index_map,
-            "module_index_var_map": self.f.module_index_var_map
+            "module_index_var_map": self.f.module_index_var_map,
+            "modularized" : self.f.check_module_helper()
         }

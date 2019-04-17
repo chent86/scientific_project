@@ -21,3 +21,12 @@ python3 run.py
 ### todo
 
 nus9601, das9701, elf9601, edf9206的化简
+
+### pickle demo
+
+```python
+import pickle
+
+data_file = open("pickle_data", "rb")
+data = pickle.load(data_file)
+```
