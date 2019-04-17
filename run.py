@@ -27,6 +27,7 @@ if __name__ == "__main__":
             print(name, "->", "【simplify time】", simplify_end_time - begin_time, end='\r')
             handler = find_modules.handler(output_file_dir, output_file_dir, name)
             data = handler.data()
+            print(data)
             module_end_time = time.time()
             print(name, "->", "【simplify time】", simplify_end_time - begin_time,
                   "【module time】", module_end_time - simplify_end_time, "【module】", data["modules_num"])

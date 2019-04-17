@@ -16,6 +16,8 @@ class find_models:
         self.module_index_var_map = dict()
         self.basic_event_num = 0
         self.gate_event_num = 0
+        self.module_dict = dict()  # { name : module_name } 不替换原有节点名称的代替品
+        self.module_dict["r1"] = "m0"
 
     def init_level(self, cur_node: node):  # 使用了DFS，不与论文步骤完全一致
         if not cur_node.children:
@@ -49,6 +51,7 @@ class find_models:
             
     def check(self):
         self.PC_check()
+        # print(self.module_dict)
 
     def PC_check(self):
         for node_name in self.level:
@@ -98,6 +101,9 @@ class find_models:
                 self.CC_helper(expand_set, connection_set, child, basic_or_top)
 
     def LCC_check(self, cur_node, basic_or_top):
+        if cur_node.name not in self.module_dict:
+            self.module_dict[cur_node.name] = f"m{self.LCC_num}"
+            self.LCC_num += 1
         self.result.add(cur_node.name)
         obtained_set = [[name] for name in basic_or_top]  # TODO 在同一个module的扩展中，是否会出现相同的节点？
         cur = 0
@@ -147,10 +153,13 @@ class find_models:
                                 child = self.helper.create_node(name)
                                 self.helper.delete_child(gate_node, child)
                             if cur_AEG == first_AEG:
-                                self.helper.add_child(gate_node, new_node, 0)
+                                self.helper.add_child(gate_node, module_node, 0)
                             else:
-                                self.helper.add_child(gate_node, new_node, 1)
-                    self.result.add(module_node.name)           
+                                self.helper.add_child(gate_node, module_node, 1)
+                    self.result.add(module_node.name)
+                    if module_node.name not in self.module_dict:
+                        self.module_dict[module_node.name] = f"m{self.LCC_num}"
+                        self.LCC_num += 1                             
 
 #  { m1 : (output, printed_set) }
     def get_sdag(self, cur_node: node, cur_root_name):
@@ -173,7 +182,10 @@ class find_models:
         for i in cur_node.children:
             if cur_node.sign[i.name] == 1:
                 line += "-"
-            line += i.name + " " + operator + " "
+            if i.name in self.module_dict:
+                line += self.module_dict[i.name] + " " + operator + " "
+            else:
+                line += i.name + " " + operator + " "
         line = line[:len(line) - 3] + ");"
         self.sdag[cur_root_name][0] += line + "\n"
         self.sdag[cur_root_name][1].add(cur_node.name)
@@ -183,12 +195,17 @@ class find_models:
             else:
                 self.get_sdag(i, i.name)
 
+    def get_real_name(self, name):
+        if name in self.module_dict:
+            return self.module_dict[name]
+        return name
+
     def output_sdag(self, output_file_dir, file_name):
         for key in self.sdag:
             if key == "r1":
                 path = file_name + "_m0.sdag"
             else:
-                path = file_name + "_" + key + ".sdag"
+                path = f"{file_name}_{self.get_real_name(key)}.sdag"
             open(output_file_dir + path, "w").write(self.sdag.get(key)[0])
 
     def get_cnf(self, output_file_dir, file_name):
@@ -201,18 +218,23 @@ class find_models:
             inv_num_dict = {}  # num : name
             i = 1
             for name in divide_set["is-child"]:
-                num_dict[name] = i
-                inv_num_dict[i] = name
+                real_name = self.get_real_name(name)
+                num_dict[real_name] = i
+                inv_num_dict[i] = real_name
                 i += 1
-            num_dict[cur_node.name] = i
-            inv_num_dict[i] = cur_node.name
+            real_module_name = self.get_real_name(cur_node.name)
+            num_dict[real_module_name] = i
+            inv_num_dict[i] = real_module_name
+            # num_dict["r1"] = i
+            # inv_num_dict[i] = "r1"
             i += 1
             for name in divide_set["not-child"]:
-                num_dict[name] = i
-                inv_num_dict[i] = name
+                real_name = self.get_real_name(name)
+                num_dict[real_name] = i
+                inv_num_dict[i] = real_name
                 i += 1
-            self.module_var_index_map[cur_node.name] = num_dict
-            self.module_index_var_map[cur_node.name] = inv_num_dict
+            self.module_var_index_map[real_module_name] = num_dict
+            self.module_index_var_map[real_module_name] = inv_num_dict
             divide_set["not-child"].add(cur_node.name)
             total_node_num = len(divide_set["not-child"]) + len(divide_set["is-child"])
             self.basic_event_num = len(divide_set["is-child"])
@@ -221,40 +243,40 @@ class find_models:
             line_scope = dict()  # {num : [from, to]}
             line = ""
             for name in divide_set["not-child"]:
-                line_scope[num_dict[name]] = [total_line_num]
+                line_scope[num_dict[self.get_real_name(name)]] = [total_line_num]
                 cur_node = self.helper.create_node(name)
                 if cur_node.gate_type == "and":
                     for child in cur_node.children:
-                        line += "-" + str(num_dict[cur_node.name]) + " " + str(num_dict[child.name]) + " 0\n"
+                        line += f"-{num_dict[self.get_real_name(cur_node.name)]} {num_dict[self.get_real_name(child.name)]} 0\n"
                         total_line_num += 1
-                    line += str(num_dict[cur_node.name]) + " "
+                    line += f"{num_dict[self.get_real_name(cur_node.name)]} "
                     for child in cur_node.children:
                         if cur_node.sign[child.name] == 1:
-                            line += str(num_dict[child.name]) + " "
+                            line += str(num_dict[self.get_real_name(child.name)]) + " "
                         else:
-                            line += "-" + str(num_dict[child.name]) + " "
+                            line += "-" + str(num_dict[self.get_real_name(child.name)]) + " "
                     line += "0\n"
                     total_line_num += 1
                 else:
                     for child in cur_node.children:
-                        line += str(num_dict[cur_node.name]) + " "
+                        line += str(num_dict[self.get_real_name(cur_node.name)]) + " "
                         if cur_node.sign[child.name] == 1:
-                            line += str(num_dict[child.name]) + " 0\n"
+                            line += str(num_dict[self.get_real_name(child.name)]) + " 0\n"
                         else:
-                            line += "-" + str(num_dict[child.name]) + " 0\n"
+                            line += "-" + str(num_dict[self.get_real_name(child.name)]) + " 0\n"
                         total_line_num += 1
-                    line += "-" + str(num_dict[cur_node.name]) + " "
+                    line += "-" + str(num_dict[self.get_real_name(cur_node.name)]) + " "
                     for child in cur_node.children:
-                        line += str(num_dict[child.name]) + " "
+                        line += str(num_dict[self.get_real_name(child.name)]) + " "
                     line += "0\n"
                     total_line_num += 1
-                line_scope[num_dict[name]].append(total_line_num - 1)
+                line_scope[num_dict[self.get_real_name(name)]].append(total_line_num - 1)
 
             for name in num_dict:
-                if name == cur_node.name:
-                    cnf_result += "c " + str(num_dict.get(name)) + " = r1\n"
-                else:
-                    cnf_result += "c " + str(num_dict.get(name)) + " = " + name + "\n"
+                # if name == real_module_name:
+                #     cnf_result += "c " + str(num_dict.get(name)) + " = r1\n"
+                # else:
+                cnf_result += "c " + str(num_dict.get(name)) + " = " + name + "\n"
             cnf_result += "c\n"
             cnf_result += "n " + str(len(divide_set["is-child"])) + "\n"
             cnf_result += "c\n"
@@ -262,16 +284,16 @@ class find_models:
                 cnf_result += "b " + str(key) + " " + str(line_scope.get(key)[0]) + " " + str(line_scope.get(key)[1]) + "\n"
             cnf_result += "c\n"
             cnf_result += "p cnf " + str(total_node_num) + " " + str(total_line_num) + "\n"
-            p_cnf_result = cnf_result + str(num_dict[node_name]) + " 0\n"
-            n_cnf_result = cnf_result + "-" + str(num_dict[node_name]) + " 0\n"
+            p_cnf_result = cnf_result + str(num_dict[self.get_real_name(node_name)]) + " 0\n"
+            n_cnf_result = cnf_result + "-" + str(num_dict[self.get_real_name(node_name)]) + " 0\n"
             cnf_result = ""
             cnf_result += line
             if node_name == "r1":
                 p_path = file_name + "_m0-p.cnf"
                 n_path = file_name + "_m0-n.cnf"
             else:
-                p_path = file_name + "_" + node_name + "-p.cnf"
-                n_path = file_name + "_" + node_name + "-n.cnf"
+                p_path = file_name + "_" + self.get_real_name(node_name) + "-p.cnf"
+                n_path = file_name + "_" + self.get_real_name(node_name) + "-n.cnf"
             p_cnf_result += cnf_result
             n_cnf_result += cnf_result
             open(output_file_dir + p_path, "w").write(p_cnf_result)
