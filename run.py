@@ -12,8 +12,9 @@ if __name__ == "__main__":
     os.system("mkdir data/result")
     for root, dirs, files in os.walk(input_file_dir):
         break
-    # slow = ["nus9601", "das9701", "elf9601", "edf9206"]
-    slow = []
+    slow = ["nus9601", "das9701", "elf9601", "edf9206"]
+    # slow = []
+    files = ["chinese.dag"]
     for file_name in files:
         begin_time = time.time()
         name = file_name[:len(file_name) - 4]

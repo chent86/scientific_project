@@ -118,21 +118,39 @@ class find_models:
             if len(s) > 1:
                 for _, first_AEG, first_gate_node in self.connection_list[s[0]]:
                     break
-                new_node = self.helper.create_node("m" + str(self.LCC_num))  # 集合共享一个module
-                self.LCC_num += 1
-                new_node.gate_type = first_gate_node.gate_type
-                for name in s:
-                    child = self.helper.create_node(name)  # 返回的是原来的节点
-                    self.helper.add_child(new_node, child, first_gate_node.sign[name])
-                for _, cur_AEG, gate_node in self.connection_list[s[0]]:
+                node_exist = False  # 一个完整结点是其他结点的一部分
+                for _, _, gate_node in self.connection_list[s[0]]:
+                    if len(gate_node.children) == len(s):
+                        node_exist = True
+                        module_node = gate_node
+                        break
+                if not node_exist:
+                    new_node = self.helper.create_node("m" + str(self.LCC_num))  # 集合共享一个module
+                    self.LCC_num += 1
+                    new_node.gate_type = first_gate_node.gate_type
                     for name in s:
-                        child = self.helper.create_node(name)
-                        self.helper.delete_child(gate_node, child)
+                        child = self.helper.create_node(name)  # 返回的是原来的节点
+                        self.helper.add_child(new_node, child, first_gate_node.sign[name])
+                    for _, cur_AEG, gate_node in self.connection_list[s[0]]:
+                        for name in s:
+                            child = self.helper.create_node(name)
+                            self.helper.delete_child(gate_node, child)
                         if cur_AEG == first_AEG:
                             self.helper.add_child(gate_node, new_node, 0)
                         else:
                             self.helper.add_child(gate_node, new_node, 1)
-                self.result.add(new_node.name)
+                    self.result.add(new_node.name)
+                else:
+                    for _, cur_AEG, gate_node in self.connection_list[s[0]]:
+                        if len(gate_node.children) > len(module_node.children):
+                            for name in s:
+                                child = self.helper.create_node(name)
+                                self.helper.delete_child(gate_node, child)
+                            if cur_AEG == first_AEG:
+                                self.helper.add_child(gate_node, new_node, 0)
+                            else:
+                                self.helper.add_child(gate_node, new_node, 1)
+                    self.result.add(module_node.name)           
 
 #  { m1 : (output, printed_set) }
     def get_sdag(self, cur_node: node, cur_root_name):
@@ -142,6 +160,8 @@ class find_models:
             else:
                 self.sdag[cur_root_name] = ["", set()]
         if not cur_node.children:
+            return
+        if cur_node.name in self.sdag[cur_root_name][1]:  # 当前模块内的重复子模块
             return
         line = ""
         if cur_node.name == cur_root_name:
@@ -158,7 +178,7 @@ class find_models:
         self.sdag[cur_root_name][0] += line + "\n"
         self.sdag[cur_root_name][1].add(cur_node.name)
         for i in cur_node.children:
-            if i.name[0] != "m":
+            if i.name not in self.result:  # 不是一个新的模块
                 self.get_sdag(i, cur_root_name)
             else:
                 self.get_sdag(i, i.name)
