@@ -62,7 +62,6 @@ class find_models:
                     flag = False
                     break
             if flag:
-                # print(node_name + " pass PC check")
                 self.CC_check(cur_node)
 
     def get_top_level(self, level_set):
@@ -86,7 +85,6 @@ class find_models:
                 flag = False
                 break
         if flag:
-            # print(cur_node.name + " pass CC check")
             self.LCC_check(cur_node, basic_or_top)
 
     def CC_helper(self, expand_set, connection_set, cur_node, basic_or_top):
@@ -127,7 +125,7 @@ class find_models:
                 for _, first_AEG, first_gate_node in self.connection_list[s[0]]:
                     break
                 node_exist = False  # 一个完整结点是其他结点的一部分
-                for _, _, gate_node in self.connection_list[s[0]]:
+                for _, m_AEG, gate_node in self.connection_list[s[0]]:
                     if len(gate_node.children) == len(s):
                         node_exist = True
                         module_node = gate_node
@@ -158,6 +156,13 @@ class find_models:
                                 self.helper.add_child(gate_node, module_node, 0)
                             else:
                                 self.helper.add_child(gate_node, module_node, 1)
+                        elif module_node != gate_node and len(module_node.children) == len(gate_node.children):
+                            for _, _, parent in self.connection_list[gate_node.name]:
+                                self.helper.delete_child(parent, gate_node)
+                                if cur_AEG == m_AEG:
+                                    self.helper.add_child(parent, module_node, 0)
+                                else:
+                                    self.helper.add_child(parent, module_node, 1)
                     self.result.add(module_node.name)
                     if module_node.name not in self.module_dict:
                         self.module_dict[module_node.name] = f"m{self.LCC_num}"
@@ -309,14 +314,16 @@ class find_models:
 
     def check_module_helper(self):
         node_list = []
-        for node_dict in self.module_var_index_map.values():
+        key_list = []
+        for key, node_dict in self.module_var_index_map.items():
+            key_list.append(key)
             node_list.append({name for name in node_dict})
         for i in range(0, len(node_list)):
             for j in range(0, len(node_list)):
                 if j != i:
                     if len(node_list[i]&node_list[j]) != 1:
-                        print("not modularized!!!")
-                        sys.exit()
+                        print("\nnot modularized!!!")
+                        # sys.exit()
                         return False
         return True
 

@@ -26,7 +26,7 @@ class simplifier:
                 print(child, "not the child of", cur_node)
                 i += 1
                 continue
-            if len(child.children) == 1 and self.r2:  # 孩子数为1，则向上合并。需要注意，更新节点名称是全局的，但是更新sign只是局部的
+            if len(child.children) == 1 and self.r2:
                 for new_child in child.children:
                     break
                 sign = child.sign[new_child.name]
@@ -49,10 +49,10 @@ class simplifier:
                 continue
             else:
                 self.simplify_helper(child, cur_node, visited_set)
-                if child.children and self.r3:  # 从最倒数第二层子树开始考虑, 自底向上合并等效的节点
+                if self.r3 and child.children:  # 从最倒数第二层子树开始考虑, 自底向上合并等效的节点
                     flag = True
                     for visited_node in visited_set:
-                        if visited_node == child:  # 化简单个孩子时，会产生同名的不同地址的相同节点，这种也要化简
+                        if visited_node.name == child.name:
                             flag = False
                             break
                         if visited_node.gate_type == child.gate_type:
