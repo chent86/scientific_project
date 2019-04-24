@@ -4,14 +4,7 @@ import os
 import traceback
 import time
 import pickle
-
-# simplify
-SAME_GATE = True
-ONE_CHILD = True
-SAME_TREE = True
-
-# modularize
-LCC_PROCESS = True
+from config import SAME_GATE, ONE_CHILD, SAME_TREE, LCC_PROCESS, SIMPLE_OUTPUT
 
 if __name__ == "__main__":
     input_file_dir = "data/raw/"
@@ -30,10 +23,12 @@ if __name__ == "__main__":
         if name in slow:
             continue
         try:
-            simplifier.handler_func(input_file_dir, output_file_dir, name, SAME_GATE, ONE_CHILD, SAME_TREE)
+            s = simplifier.handler_func(input_file_dir, output_file_dir, name, SAME_GATE, ONE_CHILD, SAME_TREE)
             simplify_end_time = time.time()
             print(name, "->", "【simplify time】", simplify_end_time - begin_time, end='\r')
-            handler = find_modules.handler(output_file_dir, output_file_dir, name, LCC_PROCESS)
+            handler = find_modules.handler(output_file_dir, output_file_dir, name, LCC_PROCESS, SIMPLE_OUTPUT)
+            handler.origin_basic_event_num = s.helper.basic_num
+            handler.origin_gate_event_num = s.helper.gate_num
             data = handler.data()
             data_file = open(f"{output_file_dir}{name}/pickle_data", "wb")
             pickle.dump(data, data_file, 2)

@@ -1,5 +1,5 @@
 from tools import node, node_helper
-import sys
+
 
 class find_models:
     def __init__(self, helper: node_helper, r1 = True):
@@ -17,7 +17,6 @@ class find_models:
         self.module_dict = dict()  # { name : module_name } 不替换原有节点名称的代替品
         self.module_dict["r1"] = "m0"
         self.r1 = r1  # False: 以门作为模块  True: 生成新模块
-
 
     def init_level(self, cur_node: node):  # 使用了DFS，不与论文步骤完全一致
         if not cur_node.children:
@@ -166,7 +165,7 @@ class find_models:
                     self.result.add(module_node.name)
                     if module_node.name not in self.module_dict:
                         self.module_dict[module_node.name] = f"m{self.LCC_num}"
-                        self.LCC_num += 1                             
+                        self.LCC_num += 1
 
 #  { m1 : (output, printed_set) }
     def get_sdag(self, cur_node: node, cur_root_name):
@@ -215,7 +214,7 @@ class find_models:
                 path = f"{file_name}_{self.get_real_name(key)}.sdag"
             open(output_file_dir + path, "w").write(self.sdag.get(key)[0])
 
-    def get_cnf(self, output_file_dir, file_name):
+    def get_cnf(self, output_file_dir, file_name, SIMPLE_OUTPUT):
         for node_name in self.result:
             cnf_result = ""
             cur_node = self.helper.create_node(node_name)
@@ -277,17 +276,23 @@ class find_models:
                     total_line_num += 1
                 line_scope[num_dict[self.get_real_name(name)]].append(total_line_num - 1)
 
-            for name in num_dict:
-                if name == real_module_name:
-                    cnf_result += "c " + str(num_dict.get(name)) + " = r1\n"
-                else:
-                    cnf_result += "c " + str(num_dict.get(name)) + " = " + name + "\n"
-            cnf_result += "c\n"
-            cnf_result += "n " + str(len(divide_set["is-child"])) + "\n"
-            cnf_result += "c\n"
-            for key in line_scope:
-                cnf_result += "b " + str(key) + " " + str(line_scope.get(key)[0]) + " " + str(line_scope.get(key)[1]) + "\n"
-            cnf_result += "c\n"
+            if SIMPLE_OUTPUT:
+                child_num = len(divide_set["is-child"])
+                cnf_result += f"c n orig vars {child_num}\n"
+
+            if not SIMPLE_OUTPUT:
+                for name in num_dict:
+                    if name == real_module_name:
+                        cnf_result += "c " + str(num_dict.get(name)) + " = r1\n"
+                    else:
+                        cnf_result += "c " + str(num_dict.get(name)) + " = " + name + "\n"
+                cnf_result += "c\n"
+                cnf_result += "n " + str(len(divide_set["is-child"])) + "\n"
+                cnf_result += "c\n"
+                for key in line_scope:
+                    cnf_result += "b " + str(key) + " " + str(line_scope.get(key)[0]) + " " + str(line_scope.get(key)[1]) + "\n"
+                cnf_result += "c\n"
+
             cnf_result += "p cnf " + str(total_node_num) + " " + str(total_line_num) + "\n"
             p_cnf_result = cnf_result + str(num_dict[self.get_real_name(node_name)]) + " 0\n"
             n_cnf_result = cnf_result + "-" + str(num_dict[self.get_real_name(node_name)]) + " 0\n"
@@ -321,14 +326,21 @@ class find_models:
         for i in range(0, len(node_list)):
             for j in range(0, len(node_list)):
                 if j != i:
-                    if len(node_list[i]&node_list[j]) != 1:
+                    if len(node_list[i] & node_list[j]) != 1:
                         print("\nnot modularized!!!")
                         # sys.exit()
                         return False
         return True
 
+
 class handler:
-    def __init__(self, input_file_dir, output_file_dir, file_name, r1 = True):
+    def __init__(self, input_file_dir, output_file_dir, file_name, r1 = True, SIMPLE_OUTPUT = False):
+        self.gate_num = 0
+        self.basic_num = 0
+        self.origin_basic_event_num = 0
+        self.origin_gate_event_num = 0
+        self.coherent_map = dict()  # node_name: bool
+        self.root_map = dict()  # module_name: root_index
         h = node_helper()
         h.parser(input_file_dir + file_name + "/" + file_name + ".sdag")
         self.f = find_models(h, r1)
@@ -339,14 +351,43 @@ class handler:
         # h.format(h.root_node)
         self.f.get_sdag(h.root_node, h.root_node.name)
         self.f.output_sdag(output_file_dir + file_name + "/", file_name)
-        self.f.get_cnf(output_file_dir + file_name + "/", file_name)
+        self.f.get_cnf(output_file_dir + file_name + "/", file_name, SIMPLE_OUTPUT)
+        self.get_gate_and_basic_num()
+        self.check_coherent()
+
+    def get_gate_and_basic_num(self):
+        for n in self.f.helper.node_dict.values():
+            if n.children:
+                self.gate_num += 1
+            else:
+                self.basic_num += 1
+
+    def check_coherent(self):
+        for name in self.f.result:
+            root_node = self.f.helper.node_dict.get(name)
+            leaves = dict()
+            self.coherent_map[self.f.get_real_name(name)] = self.coherent_helper(root_node, leaves)
+
+    def coherent_helper(self, cur_node, leaves):
+        for child in cur_node.children:
+            if not child.children or child in self.f.result:
+                if child.name in leaves:
+                    if leaves.get(child.name) != cur_node.sign[child.name]:
+                        return False
+                else:
+                    leaves[child.name] = cur_node.sign[child.name]
+            else:
+                if not self.coherent_helper(child, leaves):
+                    return False
+        return True
 
     def data(self):
         # 将map中的根全部换成r1
         for key, map_dict in self.f.module_var_index_map.items():
             for node_name, index in map_dict.items():
                 if node_name == key:
-                    map_dict["r1"] = map_dict[node_name]
+                    map_dict["r1"] = index
+                    self.root_map[key] = index
                     map_dict.pop(node_name)
                     break
         for key, map_dict in self.f.module_index_var_map.items():
@@ -354,10 +395,16 @@ class handler:
                 if node_name == key:
                     map_dict[index] = "r1"
                     break
+        # print(self.f.helper.gate_num)
         return {
-            "is_coherent": self.f.helper.check_coherent(),
+            "origin_basic_event_num": self.origin_basic_event_num,
+            "origin_gate_evnet_num": self.origin_gate_event_num,
+            "basic_event_num": self.basic_num,
+            "gate_event_num": self.gate_num,
+            "coherent_map": self.coherent_map,
             "modules_num": len(self.f.result),
             "module_var_index_map": self.f.module_var_index_map,
             "module_index_var_map": self.f.module_index_var_map,
-            "modularized" : self.f.check_module_helper()
+            "modularized": self.f.check_module_helper(),
+            "root_map": self.root_map
         }

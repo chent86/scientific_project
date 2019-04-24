@@ -96,6 +96,7 @@ class simplifier:
                     i -= 1
                 i += 1
 
+
 def handler_func(input_file_dir, output_file_dir, file_name, r1 = True, r2 = True, r3 = True):
     h = node_helper()
     h.parser(input_file_dir + file_name + ".dag")
@@ -105,3 +106,4 @@ def handler_func(input_file_dir, output_file_dir, file_name, r1 = True, r2 = Tru
     os.system("mkdir data/result/" + file_name)
     sdag = open(output_file_dir + "/" + file_name + "/" + file_name + ".sdag", "w")
     sdag.write(h.output)
+    return s

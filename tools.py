@@ -23,6 +23,8 @@ class node_helper:  # 树
         self.at_least_num = 1  # 为at_least新增的门
         self.output = ""
         self.printed_node = set()
+        self.gate_num = 0
+        self.basic_num = 0
 
     def create_node(self, name):
         if name[0] == '-':  # 非与原始的节点是同一个节点，不重复创建
@@ -161,6 +163,7 @@ class node_helper:  # 树
                     i = i + 1
                 self.at_least_helper(cur_list, [], int(count), gate_node, len(cur_list))
         raw.close()
+        self.get_gate_and_basic_num()
 
     def at_least_helper(self, neg_list, pos_list, count, gate_node, last_size):  # last_size用于避免得到相同的组合（不同的排列）
         if count == 0:
@@ -232,19 +235,9 @@ class node_helper:  # 树
         for i in cur_node.children:
             self.format(i)
 
-    def check_coherent(self):
-        leaves = dict()
-        return self.coherent_helper(self.root_node, leaves)
-
-    def coherent_helper(self, cur_node, leaves):
-        for child in cur_node.children:
-            if not child.children:
-                if child.name in leaves:
-                    if leaves.get(child.name) != cur_node.sign[child.name]:
-                        return False
-                else:
-                    leaves[child.name] = cur_node.sign[child.name]
+    def get_gate_and_basic_num(self):
+        for n in self.node_dict.values():
+            if n.children:
+                self.gate_num += 1
             else:
-                if not self.coherent_helper(child, leaves):
-                    return False
-        return True
+                self.basic_num += 1
