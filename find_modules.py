@@ -99,7 +99,7 @@ class find_models:
 
     def LCC_check(self, cur_node, basic_or_top):
         if cur_node.name not in self.module_dict:
-            self.module_dict[cur_node.name] = f"m{self.LCC_num}"
+            self.module_dict[cur_node.name] = "m" + str(self.LCC_num)
             self.LCC_num += 1
         self.result.add(cur_node.name)
         if not self.r1:
@@ -164,7 +164,7 @@ class find_models:
                                     self.helper.add_child(parent, module_node, 1)
                     self.result.add(module_node.name)
                     if module_node.name not in self.module_dict:
-                        self.module_dict[module_node.name] = f"m{self.LCC_num}"
+                        self.module_dict[module_node.name] = "m" + str(self.LCC_num)
                         self.LCC_num += 1
 
 #  { m1 : (output, printed_set) }
@@ -211,7 +211,7 @@ class find_models:
             if key == "r1":
                 path = file_name + "_m0.sdag"
             else:
-                path = f"{file_name}_{self.get_real_name(key)}.sdag"
+                path = file_name + "_" + self.get_real_name(key) + ".sdag"
             open(output_file_dir + path, "w").write(self.sdag.get(key)[0])
 
     def get_cnf(self, output_file_dir, file_name, SIMPLE_OUTPUT):
@@ -251,9 +251,9 @@ class find_models:
                 cur_node = self.helper.create_node(name)
                 if cur_node.gate_type == "and":
                     for child in cur_node.children:
-                        line += f"-{num_dict[self.get_real_name(cur_node.name)]} {num_dict[self.get_real_name(child.name)]} 0\n"
+                        line += "-" + str(num_dict[self.get_real_name(cur_node.name)]) + " " + str(num_dict[self.get_real_name(child.name)]) + " 0\n"
                         total_line_num += 1
-                    line += f"{num_dict[self.get_real_name(cur_node.name)]} "
+                    line += str(num_dict[self.get_real_name(cur_node.name)]) + " "
                     for child in cur_node.children:
                         if cur_node.sign[child.name] == 1:
                             line += str(num_dict[self.get_real_name(child.name)]) + " "
@@ -278,7 +278,7 @@ class find_models:
 
             if SIMPLE_OUTPUT:
                 child_num = len(divide_set["is-child"])
-                cnf_result += f"c n orig vars {child_num}\n"
+                cnf_result += "c n orig vars " + str(child_num) + "\n"
 
             if not SIMPLE_OUTPUT:
                 for name in num_dict:

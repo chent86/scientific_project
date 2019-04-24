@@ -30,7 +30,7 @@ if __name__ == "__main__":
             handler.origin_basic_event_num = s.helper.basic_num
             handler.origin_gate_event_num = s.helper.gate_num
             data = handler.data()
-            data_file = open(f"{output_file_dir}{name}/pickle_data", "wb")
+            data_file = open(output_file_dir + name + "/pickle_data", "wb")
             pickle.dump(data, data_file, 2)
             # print(data)
             module_end_time = time.time()
