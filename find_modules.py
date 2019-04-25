@@ -251,7 +251,10 @@ class find_models:
                 cur_node = self.helper.create_node(name)
                 if cur_node.gate_type == "and":
                     for child in cur_node.children:
-                        line += "-" + str(num_dict[self.get_real_name(cur_node.name)]) + " " + str(num_dict[self.get_real_name(child.name)]) + " 0\n"
+                        line += "-" + str(num_dict[self.get_real_name(cur_node.name)]) + " "
+                        if cur_node.sign[child.name]:
+                            line += "-"
+                        line += str(num_dict[self.get_real_name(child.name)]) + " 0\n"
                         total_line_num += 1
                     line += str(num_dict[self.get_real_name(cur_node.name)]) + " "
                     for child in cur_node.children:
@@ -271,6 +274,8 @@ class find_models:
                         total_line_num += 1
                     line += "-" + str(num_dict[self.get_real_name(cur_node.name)]) + " "
                     for child in cur_node.children:
+                        if cur_node.sign[child.name]:
+                            line += "-"
                         line += str(num_dict[self.get_real_name(child.name)]) + " "
                     line += "0\n"
                     total_line_num += 1
