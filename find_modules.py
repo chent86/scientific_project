@@ -344,6 +344,8 @@ class handler:
         self.basic_num = 0
         self.origin_basic_event_num = 0
         self.origin_gate_event_num = 0
+        self.simplify_time = 0
+        self.module_time = 0
         self.coherent_map = dict()  # node_name: bool
         self.root_map = dict()  # module_name: root_index
         h = node_helper()
@@ -411,5 +413,7 @@ class handler:
             "module_var_index_map": self.f.module_var_index_map,
             "module_index_var_map": self.f.module_index_var_map,
             "modularized": self.f.check_module_helper(),
-            "root_map": self.root_map
+            "root_map": self.root_map,
+            "simplify_time": self.simplify_time,
+            "module_time": self.module_time
         }

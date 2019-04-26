@@ -29,11 +29,13 @@ if __name__ == "__main__":
             handler = find_modules.handler(output_file_dir, output_file_dir, name, LCC_PROCESS, SIMPLE_OUTPUT)
             handler.origin_basic_event_num = s.helper.basic_num
             handler.origin_gate_event_num = s.helper.gate_num
+            module_end_time = time.time()
+            handler.simplify_time = simplify_end_time - begin_time
+            handler.module_time = module_end_time - simplify_end_time
             data = handler.data()
             data_file = open(output_file_dir + name + "/pickle_data", "wb")
             pickle.dump(data, data_file, 2)
             # print(data)
-            module_end_time = time.time()
             print(name, "->", "【simplify time】", simplify_end_time - begin_time,
                   "【module time】", module_end_time - simplify_end_time, "【module】", data["modules_num"])
         except Exception:

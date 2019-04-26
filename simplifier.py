@@ -100,6 +100,7 @@ class simplifier:
 def handler_func(input_file_dir, output_file_dir, file_name, r1 = True, r2 = True, r3 = True):
     h = node_helper()
     h.parser(input_file_dir + file_name + ".dag")
+    h.no_neg_gate_process()
     s = simplifier(h, r1, r2, r3)
     s.simplify()
     h.format(h.root_node)

@@ -3,7 +3,7 @@
 class node:  # 节点
     def __init__(self, name, gate_type = "basic"):
         self.name = name
-        self.gate_type = gate_type
+        self.gate_type = gate_type  # and, or
         self.children = set()
         self.sign = dict()  # name : 0为正, 1为负 用来标记孩子的符号
 
@@ -21,6 +21,7 @@ class node_helper:  # 树
         self.root_node = node("r1")
         self.xor_num = 1  # 为xor新增的门
         self.at_least_num = 1  # 为at_least新增的门
+        self.neg_num = 1  # 为负的gate新增的门
         self.output = ""
         self.printed_node = set()
         self.gate_num = 0
@@ -241,3 +242,28 @@ class node_helper:  # 树
                 self.gate_num += 1
             else:
                 self.basic_num += 1
+
+    def no_neg_gate_process(self):
+        self.no_neg_helper(self.root_node)
+
+    def no_neg_helper(self, cur_node: node):
+        neg_nodes = set()
+        for name, node_sign in cur_node.sign.items():
+            if node_sign and self.node_dict[name].children:
+                neg_nodes.add(self.node_dict.get(name))
+        for n in neg_nodes:
+            new_node = self.create_node(f"ng{self.neg_num}")
+            self.neg_num += 1
+            if n.gate_type == "and":
+                new_node.gate_type = "or"
+            else:
+                new_node.gate_type = "and"
+            for name, node_sign in n.sign.items():
+                new_node.sign[name] = (node_sign + 1) % 2
+            for child in n.children:
+                new_node.children.add(child)
+            self.add_child(cur_node, new_node, 0)
+        for n in neg_nodes:
+            self.delete_child(cur_node, n)
+        for child in cur_node.children:
+            self.no_neg_helper(child)
