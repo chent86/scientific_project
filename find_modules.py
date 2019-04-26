@@ -377,7 +377,7 @@ class handler:
 
     def coherent_helper(self, cur_node, leaves):
         for child in cur_node.children:
-            if not child.children or child in self.f.result:
+            if not child.children or child.name in self.f.result:
                 if child.name in leaves:
                     if leaves.get(child.name) != cur_node.sign[child.name]:
                         return False
