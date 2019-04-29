@@ -162,7 +162,8 @@ class node_helper:  # 树
                     if line[i] != " ":
                         cur += line[i]
                     i = i + 1
-                self.at_least_helper(cur_list, [], int(count), gate_node, len(cur_list))
+            for pos_num in range(int(count), len(cur_list) + 1):
+                self.at_least_helper(cur_list, [], pos_num, gate_node, len(cur_list))
         raw.close()
         self.get_gate_and_basic_num()
 
