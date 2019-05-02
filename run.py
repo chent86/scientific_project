@@ -4,7 +4,7 @@ import os
 import traceback
 import time
 import pickle
-from config import SAME_GATE, ONE_CHILD, SAME_TREE, LCC_PROCESS, SIMPLE_OUTPUT
+from config import SAME_GATE, ONE_CHILD, SAME_TREE, NORMAL_PROCESS, LCC_PROCESS, SIMPLE_OUTPUT
 
 if __name__ == "__main__":
     input_file_dir = "data/raw/"
@@ -26,7 +26,7 @@ if __name__ == "__main__":
             s = simplifier.handler_func(input_file_dir, output_file_dir, name, SAME_GATE, ONE_CHILD, SAME_TREE)
             simplify_end_time = time.time()
             print(name, "->", "【simplify time】", simplify_end_time - begin_time, end='\r')
-            handler = find_modules.handler(output_file_dir, output_file_dir, name, LCC_PROCESS, SIMPLE_OUTPUT)
+            handler = find_modules.handler(output_file_dir, output_file_dir, name, NORMAL_PROCESS, LCC_PROCESS, SIMPLE_OUTPUT)
             handler.origin_basic_event_num = s.helper.basic_num
             handler.origin_gate_event_num = s.helper.gate_num
             module_end_time = time.time()

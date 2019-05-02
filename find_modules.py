@@ -339,7 +339,7 @@ class find_models:
 
 
 class handler:
-    def __init__(self, input_file_dir, output_file_dir, file_name, r1 = True, SIMPLE_OUTPUT = False):
+    def __init__(self, input_file_dir, output_file_dir, file_name, r0 = True, r1 = True, SIMPLE_OUTPUT = False):
         self.gate_num = 0
         self.basic_num = 0
         self.origin_basic_event_num = 0
@@ -351,9 +351,12 @@ class handler:
         h = node_helper()
         h.parser(input_file_dir + file_name + "/" + file_name + ".sdag")
         self.f = find_models(h, r1)
-        self.f.init_level(h.root_node)
-        self.f.init_connection_list(h.root_node)
-        self.f.check()
+        if r0:
+            self.f.init_level(h.root_node)
+            self.f.init_connection_list(h.root_node)
+            self.f.check()
+        else:
+            self.f.result.add("r1")
         # print(self.f.result)
         # h.format(h.root_node)
         self.f.get_sdag(h.root_node, h.root_node.name)
