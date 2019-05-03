@@ -14,6 +14,12 @@ class simplifier:
         visited_set = set()
         if self.r1 or self.r2 or self.r3:
             self.simplify_helper(self.helper.root_node, None, visited_set)
+            if len(self.helper.root_node.children) == 1:
+                for child in self.helper.root_node.children:
+                    break
+                self.helper.root_node.sign = child.sign
+                self.helper.root_node.children = child.children
+                self.helper.root_node.gate_type = child.gate_type
 
     def simplify_helper(self, cur_node, parent_node, visited_set):
         if len(cur_node.children) == 0:
@@ -66,21 +72,6 @@ class simplifier:
                     if flag:
                         visited_set.add(children_list[i])
             i += 1
-        # 合并相同节点后需要再次判断
-        if len(cur_node.children) == 1 and self.r2:
-            for new_child in cur_node.children:
-                break
-            sign = cur_node.sign[new_child.name]
-            if parent_node and new_child.name in parent_node.sign and parent_node.sign[new_child.name] != sign:
-                print("error! not and origin in same gate")
-                sys.exit()
-            if parent_node:
-                self.helper.add_child(parent_node, new_child, sign)  # 不进行深拷贝，因为这样会导致同名的不同节点，造成同步困难
-                self.helper.delete_child(parent_node, cur_node)
-                cur_node = new_child
-            else:  # cur_node为r1
-                cur_node.children = new_child.children
-                cur_node.sign = new_child.sign
         children_list = [child for child in cur_node.children]
         if self.r1:
             i = 0
@@ -100,7 +91,7 @@ class simplifier:
 def handler_func(input_file_dir, output_file_dir, file_name, r1 = True, r2 = True, r3 = True):
     h = node_helper()
     h.parser(input_file_dir + file_name + ".dag")
-    h.no_neg_gate_process()
+    # h.no_neg_gate_process()
     s = simplifier(h, r1, r2, r3)
     s.simplify()
     h.format(h.root_node)
