@@ -8,7 +8,7 @@ class node:  # 节点
         self.sign = dict()  # name : 0为正, 1为负 用来标记孩子的符号
 
     def __repr__(self):
-        return "node: " + self.name
+        return self.name
 
 
 class node_helper:  # 树
@@ -26,6 +26,7 @@ class node_helper:  # 树
         self.printed_node = set()
         self.gate_num = 0
         self.basic_num = 0
+        self.conflict_num = 0  # 为 e1 & -e1中的-e1添加的门
 
     def create_node(self, name):
         if name[0] == '-':  # 非与原始的节点是同一个节点，不重复创建
@@ -127,6 +128,31 @@ class node_helper:  # 树
                     i = i + 1
                 if operator != "#":
                     gate_node.gate_type = self.operator_tag[operator]
+                    i = 0
+                    while i < len(cur_list):
+                        if sign_list[i] == 1:
+                            has_pos = False
+                            for j in range(0, len(cur_list)):
+                                if cur_list[j] == cur_list[i] and sign_list[j] == 0:
+                                    has_pos = True
+                                    break
+                            if has_pos:
+                                self.conflict_num += 1
+                                conflict_node = self.create_node("con" + str(self.conflict_num))
+                                conflict_node.gate_type = "and"
+                                self.add_child(conflict_node, cur_list[i], sign_list[i])
+                                cur_list.append(conflict_node)
+                                sign_list.append(0)
+                                j = i
+                                n = cur_list[i]
+                                while j < len(cur_list):
+                                    if cur_list[j] == n and sign_list[j] == 1:
+                                        del cur_list[j]
+                                        del sign_list[j]
+                                    else:
+                                        j += 1
+                                i -= 1
+                        i += 1
                     for i in range(len(cur_list)):
                         self.add_child(gate_node, cur_list[i], sign_list[i])
                 else:  # 处理多元异或

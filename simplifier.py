@@ -35,15 +35,16 @@ class simplifier:
             if len(child.children) == 1 and self.r2:
                 for new_child in child.children:
                     break
-                sign = child.sign[new_child.name]
-                if new_child.name in cur_node.sign and cur_node.sign[new_child.name] != sign:
-                    print("error! not and origin in same gate")
-                    sys.exit()
-                self.helper.add_child(cur_node, new_child, sign)  # 不进行深拷贝，因为这样会导致同名的不同节点，造成同步困难
-                self.helper.delete_child(cur_node, child)
-                children_list.remove(child)
-                children_list.append(new_child)
-                continue
+                if child.sign[new_child.name] != 1:  # 对于单个非的孩子不化简
+                    sign = child.sign[new_child.name]
+                    if new_child.name in cur_node.sign and cur_node.sign[new_child.name] != sign:
+                        print("error! not and origin in same gate")
+                        sys.exit()
+                    self.helper.add_child(cur_node, new_child, sign)  # 不进行深拷贝，因为这样会导致同名的不同节点，造成同步困难
+                    self.helper.delete_child(cur_node, child)
+                    children_list.remove(child)
+                    children_list.append(new_child)
+                    continue
             if cur_node.gate_type == child.gate_type and self.r1:
                 for j in child.children:
                     cur_sign = child.sign[j.name]
