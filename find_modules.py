@@ -376,18 +376,30 @@ class handler:
         for name in self.f.result:
             root_node = self.f.helper.node_dict.get(name)
             leaves = dict()
-            self.coherent_map[self.f.get_real_name(name)] = self.coherent_helper(root_node, leaves)
+            # self.coherent_map[self.f.get_real_name(name)] = self.coherent_helper(root_node, leaves)
+            self.coherent_map[self.f.get_real_name(name)] = self.tmp_coherent_check(root_node)
 
-    def coherent_helper(self, cur_node, leaves):
+    # def coherent_helper(self, cur_node, leaves):
+    #     for child in cur_node.children:
+    #         if not child.children or child.name in self.f.result:
+    #             if child.name in leaves:
+    #                 if leaves.get(child.name) != cur_node.sign[child.name]:
+    #                     return False
+    #             else:
+    #                 leaves[child.name] = cur_node.sign[child.name]
+    #         else:
+    #             if not self.coherent_helper(child, leaves):
+    #                 return False
+    #     return True
+
+    def tmp_coherent_check(self, cur_node):
+        for sign in cur_node.sign.values():
+            if sign:
+                return False
         for child in cur_node.children:
-            if not child.children or child.name in self.f.result:
-                if child.name in leaves:
-                    if leaves.get(child.name) != cur_node.sign[child.name]:
-                        return False
-                else:
-                    leaves[child.name] = cur_node.sign[child.name]
-            else:
-                if not self.coherent_helper(child, leaves):
+            if child.children and child.name not in self.f.result:
+                result = self.tmp_coherent_check(child)
+                if not result:
                     return False
         return True
 
