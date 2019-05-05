@@ -13,7 +13,7 @@ if __name__ == "__main__":
     os.system("mkdir data/result")
     for root, dirs, files in os.walk(input_file_dir):
         break
-    slow = ["nus9601", "das9701", "elf9601", "edf9206"]
+    slow = ["cea9601", "das9209", "das9701", "edf9206", "nus9601"]
     # slow = []
     # files = ["chinese.dag"]
     for file_name in files:
