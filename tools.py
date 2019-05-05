@@ -263,6 +263,22 @@ class node_helper:  # 树
         for i in cur_node.children:
             self.format(i)
 
+    def quick_format(self):
+        printed_set = set()
+        for name, n in self.node_dict.items():
+            if not n.children or name in printed_set:
+                continue
+            self.output += name
+            self.output += " := ("
+            operator = self.inv_operator_tag[n.gate_type]
+            for child in n.children:
+                if n.sign[child.name] == 1:
+                    self.output += "-"
+                self.output += child.name + " " + operator + " "
+            self.output = self.output[:len(self.output) - 3] + ");"
+            self.output += "\n"
+            printed_set.add(name)
+
     def get_gate_and_basic_num(self):
         for n in self.node_dict.values():
             if n.children:
