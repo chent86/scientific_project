@@ -219,7 +219,7 @@ class find_models:
             cnf_result = ""
             cur_node = self.helper.create_node(node_name)
             divide_set = {"not-child": set(), "is-child": set()}
-            self.divide_node(cur_node, divide_set)
+            self.divide_node(divide_set)
             num_dict = {}  # name : num
             inv_num_dict = {}  # num : name
             i = 1
@@ -314,13 +314,12 @@ class find_models:
             open(output_file_dir + p_path, "w").write(p_cnf_result)
             open(output_file_dir + n_path, "w").write(n_cnf_result)
 
-    def divide_node(self, cur_node, divide_set):
-        for child in cur_node.children:
+    def divide_node(self, divide_set):
+        for child in self.helper.node_dict.values():
             if not child.children or child.name in self.result:
                 divide_set["is-child"].add(child.name)
             else:
                 divide_set["not-child"].add(child.name)
-                self.divide_node(child, divide_set)
 
     def check_module_helper(self):
         node_list = []
