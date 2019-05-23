@@ -331,7 +331,7 @@ class find_models:
             for j in range(0, len(node_list)):
                 if j != i:
                     if len(node_list[i] & node_list[j]) != 1:
-                        print("\nnot modularized!!!")
+                        # print("\nnot modularized!!!")
                         # sys.exit()
                         return False
         return True
@@ -348,7 +348,7 @@ class handler:
         self.coherent_map = dict()  # node_name: bool
         self.root_map = dict()  # module_name: root_index
         h = node_helper()
-        h.parser(input_file_dir + file_name + "/" + file_name + ".sdag")
+        h.parser(f"{input_file_dir}/{file_name}/{file_name}.sdag")
         self.f = find_models(h, r1)
         if r0:
             self.f.init_level(h.root_node)
@@ -359,8 +359,8 @@ class handler:
         # print(self.f.result)
         # h.format(h.root_node)
         self.f.get_sdag(h.root_node, h.root_node.name)
-        self.f.output_sdag(output_file_dir + file_name + "/", file_name)
-        self.f.get_cnf(output_file_dir + file_name + "/", file_name, SIMPLE_OUTPUT)
+        self.f.output_sdag(f"{output_file_dir}/{file_name}/", file_name)
+        self.f.get_cnf(output_file_dir + "/" + file_name + "/", file_name, SIMPLE_OUTPUT)
         self.get_gate_and_basic_num()
         self.check_coherent()
 
@@ -374,7 +374,7 @@ class handler:
     def check_coherent(self):
         for name in self.f.result:
             root_node = self.f.helper.node_dict.get(name)
-            leaves = dict()
+            # leaves = dict()
             # self.coherent_map[self.f.get_real_name(name)] = self.coherent_helper(root_node, leaves)
             self.coherent_map[self.f.get_real_name(name)] = self.tmp_coherent_check(root_node)
 
