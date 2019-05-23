@@ -1,7 +1,5 @@
 # scientific project
 
-## SatFTA solver for the computation of MCSs in FTA
-
 ### quick start
 ```
 cd docker
@@ -20,15 +18,9 @@ docker-compose run preprocess python3 run.py
 |data/raw/|输入文件|
 |data/result|输出结果|
 
-### todo
+### environment
 
-nus9601, das9701, elf9601, edf9206的化简
-
-### pickle demo
-
-```python
-import pickle
-
-data_file = open("pickle_data", "rb")
-data = pickle.load(data_file)
+```
+Docker version 18.09.2
+docker-compose version 1.23.2
 ```
