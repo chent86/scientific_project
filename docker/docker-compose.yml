@@ -1,0 +1,8 @@
+
+version: '2'
+services:
+  preprocess:
+    build: .
+    working_dir: /opt/scientific_project
+    volumes:
+      - ..:/opt/scientific_project

@@ -4,7 +4,9 @@
 
 ### quick start
 ```
-python3 run.py
+cd docker
+docker-compose up -d
+docker-compose run preprocess python3 run.py
 ```
 
 ### file
