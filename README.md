@@ -5,6 +5,7 @@
 cd docker
 docker-compose up -d
 docker-compose run preprocess python3 run.py
+docker-compose run check python3 run.py
 ```
 
 ### environment

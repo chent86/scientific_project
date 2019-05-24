@@ -2,7 +2,12 @@
 version: '2'
 services:
   preprocess:
-    build: .
-    working_dir: /opt/scientific_project
+    build: preprocess
+    working_dir: /opt/scientific_project/preprocess
+    volumes:
+      - ..:/opt/scientific_project
+  check:
+    build: check
+    working_dir: /opt/scientific_project/check
     volumes:
       - ..:/opt/scientific_project
