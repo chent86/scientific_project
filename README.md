@@ -1,8 +1,10 @@
 # scientific project
 
 ### quick start
+
 ```
-sh run.sh
+sh run_preprocess.sh
+sh run_check.sh
 ```
 
 ### environment
