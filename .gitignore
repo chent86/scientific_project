@@ -1,2 +1,5 @@
 __pycache__
 .vscode 
+preprocess/data/output
+check/detail/
+check/count.xls
