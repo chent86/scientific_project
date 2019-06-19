@@ -5,9 +5,11 @@ import traceback
 import time
 import pickle
 from config import SAME_GATE, ONE_CHILD, SAME_TREE, NORMAL_PROCESS,\
-    LCC_PROCESS, SIMPLE_OUTPUT, INPUT_DIR, OUTPUT_DIR
+    LCC_PROCESS, SIMPLE_OUTPUT
 
 if __name__ == "__main__":
+    INPUT_DIR = os.environ.get("INPUT_DIR")
+    OUTPUT_DIR = os.environ.get("OUTPUT_DIR")
     os.system(f"rm -rf {OUTPUT_DIR}")
     os.system(f"mkdir {OUTPUT_DIR}")
     for root, dirs, files in os.walk(INPUT_DIR):

@@ -3,8 +3,8 @@
 ### quick start
 
 ```
-sh run_preprocess.sh
-sh run_check.sh
+python run_preprocess.py
+python run_check.py
 ```
 
 ### environment
