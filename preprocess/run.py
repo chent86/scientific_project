@@ -10,11 +10,17 @@ from config import SAME_GATE, ONE_CHILD, SAME_TREE, NORMAL_PROCESS,\
 if __name__ == "__main__":
     INPUT_DIR = os.environ.get("INPUT_DIR")
     OUTPUT_DIR = os.environ.get("OUTPUT_DIR")
+    RECREATE = int(os.environ.get("RECREATE"))
     os.system(f"mkdir -p {OUTPUT_DIR}")
     for root, dirs, files in os.walk(OUTPUT_DIR):
         break
-    for dir_name in dirs:
-        os.system(f"rm -rf {OUTPUT_DIR}/{dir_name}")
+    exist_dirs = set()
+    if RECREATE:
+        for dir_name in dirs:
+            os.system(f"rm -rf {OUTPUT_DIR}/{dir_name}")
+    else:
+        for dir_name in dirs:
+            exist_dirs.add(dir_name)
     for root, dirs, files in os.walk(INPUT_DIR):
         break
     slow = ["cea9601", "das9209", "das9701", "edf9206", "nus9601", "elf9601"]
@@ -24,7 +30,7 @@ if __name__ == "__main__":
         begin_time = time.time()
         name = file_name[:len(file_name) - 4]
         print(name, end='\r')
-        if name in slow:
+        if name in slow or name in exist_dirs:
             continue
         try:
             s = simplifier.handler_func(INPUT_DIR, OUTPUT_DIR, name, SAME_GATE, ONE_CHILD, SAME_TREE)
